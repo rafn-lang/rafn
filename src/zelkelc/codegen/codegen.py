@@ -36,8 +36,6 @@ class Codegen:
     def generate(self):
         for node in self.ast:
             match node:
-                case types.StructDeclaration():
-                    self.gen_struct_declaration(node)
                 case types.ClassDeclaration():
                     self.gen_class_declaration(node)
                 case types.FunctionDeclaration():
@@ -88,14 +86,7 @@ class Codegen:
         return (
             prefix + ("\n" if prefix and not prefix.endswith("\n") else "") + rendered
         )
-
-    def gen_struct_declaration(self, node: types.StructDeclaration):
-        members_str = ""
-        for i, m in enumerate(node.members):
-            members_str += f"{', ' if i != 0 else ''}{self.llvm_type(m.typ)}"
-
-        self.ir.structs += f"\n%{node.irname} = type " + "{ " + members_str + " }"
-
+        
     def gen_class_declaration(self, node: types.ClassDeclaration):
         members_str = ""
         for i, m in enumerate(node.members):

@@ -70,6 +70,24 @@ class Parser:
                     f"Invalid type found in parse_type: {identifier.value}"
                 )
 
+    def parse_reference_path(self) -> types.ClassPath | types.VariableRef:
+        root = self.expect_type(token.Identifier).value
+        references: list[str] = [root]
+
+        while self.current(token.Period()):
+            self.expect(token.Period())
+            name = self.expect_type(token.Identifier).value
+            references.append(name)
+
+        root = None
+        for i, name in enumerate(reversed(references)):
+            if i == 0:
+                root = types.VariableRef(name, None, None, None)
+            else:
+                root = types.ClassPath(name, None, root)
+
+        return root
+
     def parse_item(self, path: str = "_main.zk_") -> types.Node:
         t = self.tokens[self.cursor]
 
@@ -78,8 +96,6 @@ class Parser:
                 match t.value:
                     case "fn":
                         return self.parse_function_declaration(path)
-                    case "struct":
-                        return self.parse_struct_declaration(path)
                     case "class":
                         return self.parse_class_declaration(path)
                     case _:
@@ -148,43 +164,6 @@ class Parser:
     def parse_macro_call(self, ident: token.Identifier) -> types.MacroCall:
         args = self.take_delimited()
         return types.MacroCall(name=ident.value, args=args)
-
-    def parse_struct_declaration(self, path: str) -> types.StructDeclaration:
-        self.expect(token.Identifier("struct"))
-        name = self.expect_type(token.Identifier).value
-        self.expect(token.LBrace())
-
-        members: list[types.MemberDeclaration] = []
-
-        while (
-            self.cursor < len(self.tokens)
-            and self.tokens[self.cursor] != token.RBrace()
-        ):
-            t = self.tokens[self.cursor]
-
-            match t:
-                case token.Identifier():
-                    match t.value:
-                        case "val":
-                            members.append(
-                                self.parse_member_declaration(False, len(members))
-                            )
-                        case "var":
-                            members.append(
-                                self.parse_member_declaration(True, len(members))
-                            )
-                        case _:
-                            raise SyntaxError(
-                                f"Invalid keyword in struct body {t.value}"
-                            )
-                case _:
-                    raise SyntaxError(
-                        f"Invalid token found while parsing class declaration: {t}"
-                    )
-
-        self.expect(token.RBrace())
-
-        return types.StructDeclaration(name, members, irname=f"{path}.s_{name}")
 
     def parse_member_declaration(
         self, mutable: bool, member_idx: int
@@ -298,12 +277,12 @@ class Parser:
                 self.expect(token.Comma())
 
         self.expect(token.RParen())
-        
+
         label = None
         if self.current(token.Colon()):
             self.expect(token.Colon())
             label = self.expect_type(token.Identifier)
-            
+
         self.expect(token.Arrow())
         typ = self.parse_type(True)
 
@@ -346,22 +325,16 @@ class Parser:
         )
 
     def parse_value_assignment(self) -> types.ValueAssignment:
-        name = self.expect_type(token.Identifier).value
+        path = self.parse_reference_path()
 
         assigner = self.expect_type(token.Assigner).value
         match assigner:
-            case "=":
-                self.expect(token.Assigner("="))
-            case "+=":
-                self.expect(token.Assigner("+="))
-            case "-=":
-                self.expect(token.Assigner("-="))
-            case "*=":
-                self.expect(token.Assigner("*="))
-            case "/=":
-                self.expect(token.Assigner("/="))
+            case "=" | "+=" | "-=" | "*=" | "/=":
+                pass
             case _:
-                raise SyntaxError(f"Unknown assignment operator '{assigner}' found while parsing")
+                raise SyntaxError(
+                    f"Unknown assignment operator '{assigner}' found while parsing"
+                )
 
         if assigner == "=":
             expr = self.parse_expression()
@@ -369,16 +342,15 @@ class Parser:
             right = self.parse_expression()
             expr = types.BinaryExpression(
                 types.PrimaryExpression(
-                    types.VariableRef(name, True, None, None),
-                    None
+                    path, None
                 ),
                 right,
                 assigner[0],
                 right.typ,
             )
-            
+
         return types.ValueAssignment(
-            name,
+            path,
             assigner,
             None,
             expr,

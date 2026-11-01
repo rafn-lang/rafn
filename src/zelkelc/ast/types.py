@@ -15,13 +15,6 @@ class ClassDeclaration:
 
 
 @dataclass
-class StructDeclaration:
-    name: str
-    members: list[MemberDeclaration]
-    irname: str
-
-
-@dataclass
 class MemberDeclaration:
     name: str
     mutable: bool
@@ -50,7 +43,7 @@ class FunctionDeclaration:
 
 @dataclass
 class ValueAssignment:
-    name: str
+    reference: ClassPath | VariableRef
     assigner: str
     typ: Value
     expr: Expression
@@ -86,7 +79,6 @@ Node = (
     ClassDeclaration
     | ValueDeclaration
     | FunctionDeclaration
-    | StructDeclaration
     | MacroDefinition
     | MacroCall
     | InlineIR
@@ -144,8 +136,7 @@ class String:
 
 @dataclass
 class Void:
-    def to_llvm() -> str:
-        return "void"
+    pass
 
 
 @dataclass
@@ -161,9 +152,12 @@ class VariableRef:
     irname: str
     typ: Value
 
-    def to_llvm() -> str:
-        print("Cannot convert Variable to llvm ir")
-        sys.exit(1)
+
+@dataclass
+class ClassPath:
+    name: str
+    irname: str
+    child: ClassPath | VariableRef
 
 
 @dataclass
@@ -174,4 +168,6 @@ class FunctionCall:
     args: list[Expression]
 
 
-Value = Class | Integer64 | Float64 | String | Void | VariableRef | FunctionCall
+Value = (
+    Class | Integer64 | Float64 | String | Void | VariableRef | ClassPath | FunctionCall
+)

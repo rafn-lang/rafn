@@ -11,13 +11,6 @@ class SemanticError:
 
 
 @dataclass
-class StructSignature:
-    name: str
-    irname: str
-    members: dict[str, MemberSignature]
-
-
-@dataclass
 class ClassSignature:
     name: str
     irname: str
@@ -56,7 +49,6 @@ class MemberSignature:
 class Scope:
     parent: Scope | None
     classes: dict[str, ClassSignature]
-    structs: dict[str, StructSignature]
     functions: dict[str, list[FunctionSignature]]
     values: dict[str, ValueSignature]
 
@@ -65,7 +57,6 @@ class Scope:
         return Scope(
             parent=None,
             classes={},
-            structs={},
             functions={},
             values={},
         )
@@ -74,7 +65,6 @@ class Scope:
         return Scope(
             parent=self,
             classes=self.classes,
-            structs=self.structs,
             functions=self.functions,
             values={},
         )
@@ -155,8 +145,6 @@ class ScopeChecker:
                 case types.ClassDeclaration():
                     for method in top_level.methods:
                         self._check_function(method, self.global_scope)
-                case types.StructDeclaration():
-                    continue
                 case types.InlineIR():
                     for arg in top_level.args:
                         self._infer_expression_type(arg, self.global_scope)
@@ -170,32 +158,6 @@ class ScopeChecker:
     def _collect_globals(self, tree: list[types.Node]) -> None:
         for top_level in tree:
             match top_level:
-                case types.StructDeclaration(name=name, irname=irname, members=members):
-                    if name in self.global_scope.structs:
-                        self._error(f"Struct '{name}' is already declared")
-                        continue
-
-                    member_table: dict[str, MemberSignature] = {}
-                    for member in members:
-                        if member.name in member_table:
-                            self._error(
-                                f"Duplicate member '{member.name}' in struct '{name}'"
-                            )
-                            continue
-                        member_table[member.name] = MemberSignature(
-                            name=member.name,
-                            irname=f"{irname}.m_{member.name}",
-                            mutable=member.mutable,
-                            typ=member.typ,
-                            member_idx=member.real_idx,
-                        )
-
-                    self.global_scope.structs[name] = StructSignature(
-                        name=name,
-                        irname=irname,
-                        members=member_table,
-                    )
-
                 case types.ClassDeclaration(
                     name=name, irname=irname, members=members, methods=methods
                 ):
@@ -263,7 +225,7 @@ class ScopeChecker:
                             f"Function '{name}' is already defined with following signature '{existing}'"
                         )
                         continue
-                    
+
                     self.global_scope._ensure_function_overloads(name).append(
                         FunctionSignature(
                             name=name,
@@ -295,7 +257,7 @@ class ScopeChecker:
             function_scope.values[arg_name] = ValueSignature(
                 name=arg_name,
                 irname=arg_name,
-                mutable=False,
+                mutable=True,  # TODO: should all arguments be mutable?
                 typ=arg_type,
             )
 
@@ -328,30 +290,30 @@ class ScopeChecker:
                         typ=child.typ,
                     )
 
-                case types.ValueAssignment():
-                    if child.name not in function_scope.values:
+                case types.ValueAssignment():  # TODO: This only checks the root of the possible classpath, need a reusable check reference path thing...
+                    if child.reference.name not in function_scope.values:
                         self._error(
                             f"Variable '{child.name} is undefined in function '{fn.name}'"
                         )
                         continue
 
-                    if not function_scope.values[child.name].mutable:
-                        self._error(f"Variable '{child.name}' is immutable")
+                    if not function_scope.values[child.reference.name].mutable:
+                        self._error(f"Variable '{child.reference.name}' is immutable")
                         continue
 
                     expression_type = self._infer_expression_type(
                         child.expr, function_scope
                     )
                     if expression_type is not None and not self._same_type(
-                        expression_type, function_scope.values[child.name].typ
+                        expression_type, function_scope.values[child.reference.name].typ
                     ):
                         self._error(
-                            f"Type mismatch for '{child.name}' in function '{fn.name}': "
-                            f"expected {self._type_name(function_scope.values[child.name].typ)}, got {self._type_name(expression_type)}"
+                            f"Type mismatch for '{child.reference.name}' in function '{fn.name}': "
+                            f"expected {self._type_name(function_scope.values[child.reference.name].typ)}, got {self._type_name(expression_type)}"
                         )
 
                     child.typ = expression_type
-                    child.irname = function_scope.values[child.name].irname
+                    child.irname = function_scope.values[child.reference.name].irname
                     continue
 
                 case types.ReturnStatement():
@@ -504,7 +466,7 @@ class ScopeChecker:
     def _same_type(self, left: object, right: object) -> bool:
         return self._type_token(left) == self._type_token(right)
 
-    def _type_token(self, typ: object) -> str:
+    def _type_token(self, typ: object) -> str:        
         if typ is types.Integer64 or isinstance(typ, types.Integer64):
             return "i64"
         if typ is types.Float64 or isinstance(typ, types.Float64):
