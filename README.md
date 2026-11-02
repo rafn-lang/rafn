@@ -21,7 +21,7 @@ Lexer --> Preprocessor (unimplemented) --> Parser --> Expander --> Validator -->
   - With no \* or & before type it will be "dynamic", the compiler figures out if it's the pointer or the value that is being used
   - explicit value with _ or explicit pointer with &. You can also use & and _ on a "dynamic" type to get both, "dynamic" types are both at the same time, but in reality they are probably the pointer and then you know both
 
-## Planning code + ideas + sketch, ... etc ([see also](https://github.com/rafnlang/rafn-syntax-demo))
+## Planning code + ideas + sketch, ... etc ([see also](https://github.com/rafn-lang/rafn-syntax-demo))
 
 ### Macros
 
