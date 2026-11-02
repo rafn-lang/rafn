@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from dataclasses import dataclass
 
-from src.zelkelc.lexer import token
+from src.rafnc.lexer import token
 
 
 @dataclass

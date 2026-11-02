@@ -1,7 +1,7 @@
 from itertools import count
 
-from src.zelkelc.ast import types
-from src.zelkelc.lexer import token
+from src.rafnc.ast import types
+from src.rafnc.lexer import token
 
 
 class SyntaxError(Exception):
@@ -88,7 +88,7 @@ class Parser:
 
         return root
 
-    def parse_item(self, path: str = "_main.zk_") -> types.Node:
+    def parse_item(self, path: str = "_main.rafn_") -> types.Node:
         t = self.tokens[self.cursor]
 
         match t:
@@ -292,7 +292,7 @@ class Parser:
 
         irname = f"{path}.f_{name}_{self.type_to_str(typ, True)}"
         if name == "main":
-            irname = "zkmain"
+            irname = "rafnmain"
 
         return types.FunctionDeclaration(name, label, typ, args, body, irname)
 
@@ -341,9 +341,7 @@ class Parser:
         else:
             right = self.parse_expression()
             expr = types.BinaryExpression(
-                types.PrimaryExpression(
-                    path, None
-                ),
+                types.PrimaryExpression(path, None),
                 right,
                 assigner[0],
                 right.typ,

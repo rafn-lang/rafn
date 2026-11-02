@@ -3,14 +3,14 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from src.zelkelbt.build import build_package
-from src.zelkelbt.config import get_config
+from src.rafnbt.build import build_package
+from src.rafnbt.config import get_config
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        prog="zk",
-        description="Zelkel Build Tools (zk)",
+        prog="rafn",
+        description="Rafn Build Tools (rafn)",
         formatter_class=argparse.RawTextHelpFormatter,
         add_help=True,
     )
@@ -19,7 +19,7 @@ if __name__ == "__main__":
         "-v",
         "--version",
         action="version",
-        version="zk 1.0.0",
+        version="rafn 1.0.0",
         help="Print version info",
     )
 
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         help="Enable release run mode",
     )
 
-    parser.usage = "zk [COMMAND] [OPTIONS]"
+    parser.usage = "rafn [COMMAND] [OPTIONS]"
 
     args = parser.parse_args()
 

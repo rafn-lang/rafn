@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from src.zelkelc.ast import types
-from src.zelkelc.validator import scope
+from src.rafnc.ast import types
+from src.rafnc.validator import scope
 
 
 class SemanticCheckFailed(Exception):

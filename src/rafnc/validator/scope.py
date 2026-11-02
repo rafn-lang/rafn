@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from src.zelkelc.ast import types
+from src.rafnc.ast import types
 
 
 @dataclass
@@ -466,7 +466,7 @@ class ScopeChecker:
     def _same_type(self, left: object, right: object) -> bool:
         return self._type_token(left) == self._type_token(right)
 
-    def _type_token(self, typ: object) -> str:        
+    def _type_token(self, typ: object) -> str:
         if typ is types.Integer64 or isinstance(typ, types.Integer64):
             return "i64"
         if typ is types.Float64 or isinstance(typ, types.Float64):

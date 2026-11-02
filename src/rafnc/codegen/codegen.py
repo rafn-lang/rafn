@@ -1,7 +1,7 @@
 import struct
 
-from src.zelkelc.ast import types
-from src.zelkelc.expander.expander import render_llvm
+from src.rafnc.ast import types
+from src.rafnc.expander.expander import render_llvm
 
 
 class GeneratorError(Exception):
@@ -66,7 +66,7 @@ class Codegen:
     def gen_main_function(self):
         self.ir.bottom += "define i32 @main() {\n"
         self.ir.bottom += "entry:\n"
-        self.ir.bottom += "call void @zkmain()\n"
+        self.ir.bottom += "call void @rafnmain()\n"
         self.ir.bottom += "ret i32 0\n"
         self.ir.bottom += "}\n"
 
@@ -86,7 +86,7 @@ class Codegen:
         return (
             prefix + ("\n" if prefix and not prefix.endswith("\n") else "") + rendered
         )
-        
+
     def gen_class_declaration(self, node: types.ClassDeclaration):
         members_str = ""
         for i, m in enumerate(node.members):
